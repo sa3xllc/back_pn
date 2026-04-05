@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Back Rehab Protocol</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0f0d;
+  --surface: #131a16;
+  --surface2: #1a2320;
+  --border: #243029;
+  --text: #e8ede9;
+  --text-dim: #7a9484;
+  --accent: #4ade80;
+  --accent-dim: #22633d;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  --danger-dim: #7f1d1d;
+  --radius: 12px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+/* Top bar */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,15,13,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  padding-top: calc(env(safe-area-inset-top, 12px) + 4px);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.topbar h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px; font-weight: 600;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--accent);
+}
+.topbar-nav { display: flex; gap: 6px; }
+.topbar-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text-dim); border-radius: 8px;
+  padding: 6px 12px; font-size: 12px; font-family: 'DM Sans', sans-serif;
+  font-weight: 500; cursor: pointer; transition: all 0.15s;
+}
+.topbar-btn.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+
+/* Pages */
+.page { display: none; padding: 16px; }
+.page.active { display: block; }
+
+/* Pain Gate */
+.pain-gate {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 70dvh; text-align: center;
+}
+.pain-gate h2 {
+  font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #1a2e22;
+}
+.pain-gate .subtitle {
+  color: #4a5e52; font-size: 13px; margin-bottom: 32px;
+}
+.pain-scale {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+  width: 100%; max-width: 360px; margin-bottom: 24px;
+}
+.pain-btn {
+  background: var(--surface2); border: 2px solid var(--border);
+  color: var(--text); border-radius: 12px;
+  padding: 14px 0; font-size: 20px; font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer; transition: all 0.15s;
+}
+.pain-btn:active { transform: scale(0.95); }
+.pain-btn.low { border-color: var(--accent); background: rgba(74,222,128,0.1); color: #166534; }
+.pain-btn.mid { border-color: var(--warn); background: rgba(245,158,11,0.1); color: #92400e; }
+.pain-btn.high { border-color: var(--danger); background: rgba(239,68,68,0.1); color: #991b1b; }
+.pain-btn.selected { transform: scale(1.08); }
+.pain-btn.selected.low { background: var(--accent); color: var(--bg); }
+.pain-btn.selected.mid { background: var(--warn); color: var(--bg); }
+.pain-btn.selected.high { background: var(--danger); color: #fff; }
+
+.gate-msg {
+  font-size: 13px; color: var(--text-dim);
+  min-height: 40px; margin-bottom: 20px;
+  padding: 0 12px; line-height: 1.5;
+}
+.gate-msg.warn { color: var(--warn); }
+.gate-msg.danger { color: var(--danger); }
+
+.start-btn {
+  background: var(--accent); color: var(--bg);
+  border: none; border-radius: 12px;
+  padding: 14px 40px; font-size: 16px; font-weight: 700;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: all 0.15s;
+  opacity: 0.3; pointer-events: none;
+}
+.start-btn.ready { opacity: 1; pointer-events: auto; }
+.start-btn:active { transform: scale(0.97); }
+
+/* Session View */
+.session-header {
+  text-align: center; padding: 12px 0 16px;
+}
+.session-timer {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px; font-weight: 600; color: var(--accent);
+  letter-spacing: 2px;
+}
+.session-block-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-dim); margin-top: 4px;
+}
+
+.block-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 12px;
+  overflow: hidden;
+}
+.block-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 16px; cursor: pointer;
+}
+.block-header h3 {
+  font-size: 14px; font-weight: 600;
+}
+.block-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; padding: 3px 8px;
+  border-radius: 6px; font-weight: 500;
+}
+.block-tag.time { background: var(--accent-dim); color: var(--accent); }
+.block-tag.skipped { background: var(--danger-dim); color: var(--danger); }
+
+.block-body { padding: 0 16px 14px; }
+
+.exercise {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.exercise:last-child { border-bottom: none; }
+.exercise-name {
+  font-size: 14px; font-weight: 500; margin-bottom: 3px;
+}
+.exercise-detail {
+  font-size: 12px; color: var(--text-dim); line-height: 1.5;
+}
+.exercise-cue {
+  font-size: 11px; color: var(--accent); margin-top: 3px;
+  font-style: italic;
+}
+
+.exercise-check {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.exercise-check:last-child { border-bottom: none; }
+.check-box {
+  width: 22px; height: 22px; border-radius: 6px;
+  border: 2px solid var(--border); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.exercise-check.done .check-box {
+  background: var(--accent); border-color: var(--accent);
+}
+.exercise-check.done .check-box::after {
+  content: '✓'; font-size: 13px; color: var(--bg); font-weight: 700;
+}
+.exercise-check.done .exercise-name { color: var(--text-dim); text-decoration: line-through; }
+
+.finish-btn {
+  display: block; width: 100%; margin-top: 16px;
+  background: var(--accent); color: var(--bg);
+  border: none; border-radius: 12px;
+  padding: 14px; font-size: 16px; font-weight: 700;
+  font-family: 'DM Sans', sans-serif; cursor: pointer;
+}
+
+/* Log Page */
+.log-section { margin-bottom: 24px; }
+.log-section h3 {
+  font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-dim); margin-bottom: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.log-entry {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+}
+.log-date { font-size: 13px; font-weight: 500; }
+.log-pain {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px; font-weight: 600;
+  padding: 3px 10px; border-radius: 6px;
+}
+.log-pain.low { background: rgba(74,222,128,0.15); color: var(--accent); }
+.log-pain.mid { background: rgba(245,158,11,0.15); color: var(--warn); }
+.log-pain.high { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+.log-meta { font-size: 11px; color: var(--text-dim); }
+
+.walk-input-row {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+.walk-input {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px; font-size: 14px;
+  color: var(--text); font-family: 'DM Sans', sans-serif;
+}
+.walk-input::placeholder { color: var(--text-dim); }
+.walk-save-btn {
+  background: var(--accent-dim); color: var(--accent);
+  border: 1px solid var(--accent); border-radius: 10px;
+  padding: 12px 16px; font-size: 13px; font-weight: 600;
+  font-family: 'DM Sans', sans-serif; cursor: pointer;
+}
+
+.trend-bar {
+  display: flex; align-items: flex-end; gap: 4px;
+  height: 80px; margin-top: 8px;
+}
+.trend-col {
+  flex: 1; border-radius: 4px 4px 0 0; min-height: 4px;
+  transition: height 0.3s;
+}
+
+.empty-state {
+  text-align: center; padding: 32px 16px;
+  color: var(--text-dim); font-size: 13px;
+}
+
+/* Info Page */
+.info-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+}
+.info-card h3 {
+  font-size: 14px; font-weight: 600; margin-bottom: 8px;
+  color: var(--accent);
+}
+.info-card p {
+  font-size: 13px; color: var(--text-dim); line-height: 1.6;
+}
+
+.clear-btn {
+  display: block; width: 100%; margin-top: 20px;
+  background: var(--danger-dim); color: var(--danger);
+  border: 1px solid var(--danger); border-radius: 10px;
+  padding: 12px; font-size: 13px; font-weight: 600;
+  font-family: 'DM Sans', sans-serif; cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>REHAB</h1>
+  <div class="topbar-nav">
+    <button class="topbar-btn active" onclick="showPage('session')">Session</button>
+    <button class="topbar-btn" onclick="showPage('log')">Log</button>
+    <button class="topbar-btn" onclick="showPage('info')">Info</button>
+  </div>
+</div>
+
+<!-- SESSION PAGE -->
+<div class="page active" id="page-session">
+  <!-- Pain Gate -->
+  <div id="pain-gate" class="pain-gate">
+    <h2>Pre-Session Pain Check</h2>
+    <p class="subtitle">Rate your current low back pain before starting</p>
+    <div class="pain-scale" id="pain-scale"></div>
+    <div class="gate-msg" id="gate-msg"></div>
+    <button class="start-btn" id="start-btn" onclick="startSession()">Start Session</button>
+  </div>
+
+  <!-- Active Session -->
+  <div id="active-session" style="display:none;">
+    <div class="session-header">
+      <div class="session-timer" id="session-timer">00:00</div>
+      <div class="session-block-label" id="block-label">Block 1 of 5</div>
+    </div>
+    <div id="session-blocks"></div>
+    <button class="finish-btn" onclick="finishSession()">Complete Session</button>
+  </div>
+</div>
+
+<!-- LOG PAGE -->
+<div class="page" id="page-log">
+  <div class="log-section">
+    <h3>Walking Tolerance</h3>
+    <div class="walk-input-row">
+      <input type="number" class="walk-input" id="walk-duration" placeholder="Minutes walked" min="1" max="180">
+      <input type="number" class="walk-input" id="walk-pain" placeholder="Pain (0-10)" min="0" max="10">
+      <button class="walk-save-btn" onclick="saveWalk()">Log</button>
+    </div>
+    <div id="walk-log"></div>
+  </div>
+
+  <div class="log-section">
+    <h3>Pain Trend (Last 14 Sessions)</h3>
+    <div class="trend-bar" id="trend-bar"></div>
+  </div>
+
+  <div class="log-section">
+    <h3>Session History</h3>
+    <div id="session-log"></div>
+  </div>
+</div>
+
+<!-- INFO PAGE -->
+<div class="page" id="page-info">
+  <div class="info-card">
+    <h3>Protocol Logic</h3>
+    <p>This is a daily spine rehabilitation protocol built around Stuart McGill's flexion-intolerant framework. Every session opens with a pain gate. Score of 7+ restricts you to Blocks 1, 2, and 5 only (spine reset, Big 3, breathing). Below 7 you get the full protocol including glute activation, nerve glides, and stability work.</p>
+  </div>
+  <div class="info-card">
+    <h3>When To Progress Back</h3>
+    <p>When your walking pain drops below 4/10 consistently for 7+ consecutive days and session pain is trending down, we layer strength work back in one session at a time alongside this protocol.</p>
+  </div>
+  <div class="info-card">
+    <h3>Cues That Matter</h3>
+    <p>Curl-up: one hand under lumbar arch, lock ribcage, don't flatten back. Side plank: feet stacked, straight line ear to ankle. Bird dog: lock spine first, then extend. Clamshells: pelvis stacked and still, movement is small. Stir the pot: only if pain is 3/10 or below that day.</p>
+  </div>
+  <div class="info-card">
+    <h3>Red Flags — See a Professional</h3>
+    <p>Pain radiating below the knee. Numbness or tingling in legs or feet. Loss of bladder or bowel control. Pain that wakes you from sleep. No improvement after 2 weeks of consistent protocol use.</p>
+  </div>
+  <button class="clear-btn" onclick="clearData()">Clear All Data</button>
+</div>
+
+<script>
+// ─── DATA ───
+const STORAGE_KEY = 'backrehab_v1';
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultData(); }
+  catch { return defaultData(); }
+}
+function defaultData() { return { sessions: [], walks: [] }; }
+function saveData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+let data = loadData();
+let selectedPain = null;
+let sessionStart = null;
+let timerInterval = null;
+
+// ─── PROTOCOL ───
+const FULL_PROTOCOL = [
+  {
+    name: 'Block 1 — Spine Reset',
+    time: '5 min',
+    exercises: [
+      { name: 'Crocodile Breathing', detail: '2 minutes. Face down, forehead on stacked hands. Breathe into belly against the floor.', cue: 'Feel your abdomen push into the mat on each inhale. Slow, full breaths.' },
+      { name: 'Cat-Camel', detail: '6–8 slow cycles. This is controlled motion, not stretching.', cue: 'Don\'t push end ranges. Smooth, easy arcs. Each cycle slower than the last.' },
+      { name: 'Supine Knee Rocks', detail: '1 minute. Knees together, feet flat, rock both knees side to side through a small, pain-free range.', cue: 'Keep range small. This is neural calming, not a stretch. Shoulders stay down.' },
+      { name: 'Rack Hang (passive)', detail: '2 x 20s. Hang from pull-up bar with relaxed grip, feet on floor for partial offload.', cue: 'Let gravity decompress. Don\'t pull or engage. If this aggravates, skip it.' }
+    ]
+  },
+  {
+    name: 'Block 2 — McGill Big 3',
+    time: '11 min',
+    exercises: [
+      { name: 'Curl-Up', detail: 'Descending pyramid: 8-6-4 reps, 10s holds each. Rest 15–20s between sets.', cue: 'One hand under lumbar arch. Lock ribcage. Don\'t flatten the back.' },
+      { name: 'Side Plank (each side)', detail: 'Descending pyramid: 8-6-4 reps, 10s holds each. Feet stacked.', cue: 'Straight line ear to ankle. No hip sag.' },
+      { name: 'Bird Dog (each side)', detail: 'Descending pyramid: 8-6-4 reps, 10s holds each.', cue: 'Lock spine first, then extend. Sweep the floor on return, don\'t drop.' }
+    ]
+  },
+  {
+    name: 'Block 3 — Glute Activation & Hips',
+    time: '10 min',
+    restricted: true,
+    exercises: [
+      { name: 'Banded Clamshells', detail: '2 × 15 each side.', cue: 'Pelvis stacked and still. Movement is small and controlled.' },
+      { name: 'Side-Lying Hip Abduction (banded)', detail: '2 × 12 each side.', cue: 'Slight forward lean of torso to bias glute med.' },
+      { name: 'Supine Figure-4 Piriformis Stretch', detail: '2 × 30s each side.', cue: 'Pull gently. No sharp or electric pain.' },
+      { name: 'Half-Kneeling Hip Flexor Stretch', detail: '2 × 30s each side. Squeeze glute of back leg.', cue: 'Posterior pelvic tilt first, then lean forward.' },
+      { name: 'Sciatic Nerve Glide', detail: '2 × 10 each side. Seated, extend knee while dorsiflexing foot.', cue: 'Gentle tension only. Stop if shooting pain.' }
+    ]
+  },
+  {
+    name: 'Block 4 — Stability',
+    time: '4 min',
+    restricted: true,
+    exercises: [
+      { name: 'Option A: Stir the Pot', detail: '3 × 6 circles each direction on stability ball.', cue: 'Only if pain ≤ 3/10 today. Elbows on ball, body rigid.' },
+      { name: 'Option B: Dead Bug (arms only)', detail: '3 × 8 each side. Default on higher pain days.', cue: 'Press low back into floor. Slow controlled movement.' },
+      { name: 'Option C: Tall-Kneeling Band Press-Out', detail: '3 × 20s hold. Band around knees pressing out.', cue: 'Anti-rotation without anchor. Brace hard.' }
+    ]
+  },
+  {
+    name: 'Block 5 — Recovery Reset',
+    time: '5 min',
+    exercises: [
+      { name: '90/90 Decompression', detail: '2 minutes. Lie on back, calves up on a chair or stability ball. Hips and knees both at 90 degrees.', cue: 'This unloads the spine and relaxes the psoas. Just be here.' },
+      { name: 'Supine Glute Press', detail: '30s. In 90/90 position, gently press feet into the surface. Hold, don\'t bridge.', cue: 'Low-level glute engagement to reset tone. No spinal movement.' },
+      { name: 'Constructive Rest', detail: '1 minute. Knees bent, feet flat, arms at sides. Let the back settle into the floor naturally.', cue: 'Don\'t force the back flat. Let gravity do the work.' },
+      { name: 'Diaphragmatic Breathing', detail: '2 minutes. 5-count inhale through nose, 5-count exhale through mouth. Slow and deliberate.', cue: 'Belly rises on inhale. Ribs drop on exhale. Each exhale a little longer than the last.' }
+    ]
+  }
+];
+
+// ─── PAIN GATE ───
+function buildPainScale() {
+  const container = document.getElementById('pain-scale');
+  for (let i = 0; i <= 9; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'pain-btn ' + (i <= 3 ? 'low' : i <= 6 ? 'mid' : 'high');
+    btn.textContent = i;
+    btn.onclick = () => selectPain(i);
+    container.appendChild(btn);
+  }
+}
+
+function selectPain(n) {
+  selectedPain = n;
+  document.querySelectorAll('.pain-btn').forEach((b, i) => {
+    b.classList.toggle('selected', i === n);
+  });
+  const msg = document.getElementById('gate-msg');
+  const btn = document.getElementById('start-btn');
+  btn.classList.add('ready');
+
+  if (n >= 7) {
+    msg.className = 'gate-msg danger';
+    msg.textContent = 'High pain day. Session restricted to Blocks 1, 2, and 5 only. Blocks 3 and 4 are locked.';
+  } else if (n >= 4) {
+    msg.className = 'gate-msg warn';
+    msg.textContent = 'Moderate pain. Full protocol available. Skip Stir the Pot, use Dead Bug instead for Block 4.';
+  } else {
+    msg.className = 'gate-msg';
+    msg.textContent = 'Low pain. Full protocol available including Stir the Pot option.';
+  }
+}
+
+// ─── SESSION ───
+function startSession() {
+  if (selectedPain === null) return;
+  document.getElementById('pain-gate').style.display = 'none';
+  document.getElementById('active-session').style.display = 'block';
+
+  sessionStart = Date.now();
+  timerInterval = setInterval(updateTimer, 1000);
+  buildSessionBlocks();
+}
+
+function updateTimer() {
+  const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+  const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const s = String(elapsed % 60).padStart(2, '0');
+  document.getElementById('session-timer').textContent = m + ':' + s;
+}
+
+function buildSessionBlocks() {
+  const container = document.getElementById('session-blocks');
+  container.innerHTML = '';
+  const restricted = selectedPain >= 7;
+
+  FULL_PROTOCOL.forEach((block, bi) => {
+    const isSkipped = restricted && block.restricted;
+    const card = document.createElement('div');
+    card.className = 'block-card';
+
+    const header = document.createElement('div');
+    header.className = 'block-header';
+    header.innerHTML = `
+      <h3>${block.name}</h3>
+      ${isSkipped
+        ? '<span class="block-tag skipped">LOCKED</span>'
+        : '<span class="block-tag time">' + block.time + '</span>'}
+    `;
+
+    const body = document.createElement('div');
+    body.className = 'block-body';
+    if (isSkipped) {
+      body.innerHTML = '<p style="font-size:12px;color:var(--text-dim);padding:8px 0;">Skipped — pain ≥ 7</p>';
+      body.style.display = 'none';
+    } else {
+      block.exercises.forEach((ex, ei) => {
+        const id = `ex-${bi}-${ei}`;
+        const div = document.createElement('div');
+        div.className = 'exercise-check';
+        div.id = id;
+        div.onclick = () => toggleExercise(id);
+        div.innerHTML = `
+          <div class="check-box"></div>
+          <div>
+            <div class="exercise-name">${ex.name}</div>
+            <div class="exercise-detail">${ex.detail}</div>
+            ${ex.cue ? '<div class="exercise-cue">' + ex.cue + '</div>' : ''}
+          </div>
+        `;
+        body.appendChild(div);
+      });
+    }
+
+    header.onclick = () => {
+      body.style.display = body.style.display === 'none' ? 'block' : 'none';
+    };
+
+    card.appendChild(header);
+    card.appendChild(body);
+    container.appendChild(card);
+
+    // First block open, rest collapsed
+    if (bi > 0 && !isSkipped) body.style.display = 'none';
+  });
+}
+
+function toggleExercise(id) {
+  document.getElementById(id).classList.toggle('done');
+}
+
+function finishSession() {
+  clearInterval(timerInterval);
+  const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+  const entry = {
+    date: new Date().toISOString(),
+    pain: selectedPain,
+    duration: elapsed,
+    restricted: selectedPain >= 7
+  };
+  data.sessions.push(entry);
+  saveData(data);
+
+  // Reset
+  selectedPain = null;
+  document.getElementById('active-session').style.display = 'none';
+  document.getElementById('pain-gate').style.display = 'flex';
+  document.querySelectorAll('.pain-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('gate-msg').textContent = '';
+  document.getElementById('start-btn').classList.remove('ready');
+
+  showPage('log');
+}
+
+// ─── LOG PAGE ───
+function renderLog() {
+  renderSessionLog();
+  renderTrend();
+  renderWalkLog();
+}
+
+function renderSessionLog() {
+  const container = document.getElementById('session-log');
+  if (data.sessions.length === 0) {
+    container.innerHTML = '<div class="empty-state">No sessions yet. Complete your first session to start tracking.</div>';
+    return;
+  }
+  container.innerHTML = data.sessions.slice().reverse().slice(0, 30).map(s => {
+    const d = new Date(s.date);
+    const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const dur = Math.floor(s.duration / 60);
+    const cls = s.pain <= 3 ? 'low' : s.pain <= 6 ? 'mid' : 'high';
+    return `
+      <div class="log-entry">
+        <div>
+          <div class="log-date">${dateStr}</div>
+          <div class="log-meta">${dur} min${s.restricted ? ' · Restricted' : ' · Full'}</div>
+        </div>
+        <div class="log-pain ${cls}">${s.pain}/10</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTrend() {
+  const container = document.getElementById('trend-bar');
+  const recent = data.sessions.slice(-14);
+  if (recent.length < 2) {
+    container.innerHTML = '<div class="empty-state" style="width:100%">Need 2+ sessions for trend</div>';
+    return;
+  }
+  container.innerHTML = recent.map(s => {
+    const h = Math.max(8, (s.pain / 10) * 100);
+    const c = s.pain <= 3 ? 'var(--accent)' : s.pain <= 6 ? 'var(--warn)' : 'var(--danger)';
+    return `<div class="trend-col" style="height:${h}%;background:${c};"></div>`;
+  }).join('');
+}
+
+function saveWalk() {
+  const dur = parseInt(document.getElementById('walk-duration').value);
+  const pain = parseInt(document.getElementById('walk-pain').value);
+  if (isNaN(dur) || isNaN(pain)) return;
+  data.walks.push({ date: new Date().toISOString(), duration: dur, pain: pain });
+  saveData(data);
+  document.getElementById('walk-duration').value = '';
+  document.getElementById('walk-pain').value = '';
+  renderWalkLog();
+}
+
+function renderWalkLog() {
+  const container = document.getElementById('walk-log');
+  if (data.walks.length === 0) {
+    container.innerHTML = '<div class="empty-state">Log walks with Barbas to track tolerance over time.</div>';
+    return;
+  }
+  container.innerHTML = data.walks.slice().reverse().slice(0, 10).map(w => {
+    const d = new Date(w.date);
+    const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const cls = w.pain <= 3 ? 'low' : w.pain <= 6 ? 'mid' : 'high';
+    return `
+      <div class="log-entry">
+        <div>
+          <div class="log-date">${dateStr}</div>
+          <div class="log-meta">${w.duration} min walk</div>
+        </div>
+        <div class="log-pain ${cls}">${w.pain}/10</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ─── NAVIGATION ───
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.topbar-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.topbar-btn').forEach(b => {
+    if (b.textContent.toLowerCase() === name) b.classList.add('active');
+  });
+  if (name === 'log') renderLog();
+}
+
+function clearData() {
+  if (confirm('Clear all session and walk data? This cannot be undone.')) {
+    data = defaultData();
+    saveData(data);
+    renderLog();
+  }
+}
+
+// ─── INIT ───
+buildPainScale();
+</script>
+</body>
+</html>
